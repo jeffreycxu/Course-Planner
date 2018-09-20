@@ -1,0 +1,102 @@
+{% extends 'classes/layout.html'%}
+
+
+{% block content %}
+<h1> HIIII</h1>
+{{title}}
+
+{% if user.is_authenticated %}
+  <p>Hi {{ user.username }}!</p>
+  <p><a href="{% url 'logout' %}">logout</a></p>
+{% else %}
+  <p>You are not logged in</p>
+  <a href="{% url 'login' %}">login</a>
+{% endif %}
+
+<ol class="breadcrumb my-4">
+        <li class="breadcrumb-item active">Create Your Schedule! </li>
+ </ol>
+
+
+{%for course in courses%}
+    <ul>
+        <a href = "/courses/details/{{course.title}}">
+        <li>{{course.title}}</li>
+        <li>{{course.credits}}</li>
+        </a>
+    </ul>
+{%endfor%}
+<div class="table-responsive-sm">
+    <table class = "table table-bordered table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th scope = "col">Class Name</th>
+                <th scope = "col">Credits</th>
+                <th scope = "col">Options</th>
+            </tr>
+        </thead> 
+        <tbody>
+        {%for class in classes%}
+            {%if class.student == user%}
+                <tr id = {{forloop.counter}}>
+                        <td id = "className{{forloop.counter}}"> {{class.class_name}}</td>
+                        <td id = "credits{{forloop.counter}}"> {{class.credits}}</td>
+                        <td> <input type="button" id= "edit_button{{forloop.counter}}" value="Edit" class="edit" onclick="edit_row('{{forloop.counter}}')">
+                            <input type="button" id="save_button{{forloop.counter}}" value="Save" class="save" onclick="save_row('{{forloop.counter}}')">
+                            <input type="button" value="Delete" class="delete" onclick="delete_row('{{forloop.counter}}')">
+                        </td>
+                </tr>
+            {% endif %}
+        
+        {%endfor%}
+        <tr>
+            <form method = "post">
+                    {%csrf_token %}
+                    {%for field in form %}
+                        <td>{{ field.label_tag }} {{field}}</td>
+                    {%endfor%}
+                    <td><button type = "submit"> Submit </button> </td>
+            </form>
+        </tr>
+        </tbody>   
+    </table>
+</div>
+
+{%endblock%}
+
+{% block javascript %}
+<script>
+   $("#id_class_name").change(function () {
+      var class_name = $(this).val();
+
+      $.ajax({
+        url: '/ajax/validate_course/',
+        data: {
+          'class_name': class_name
+        },
+        dataType: 'json',
+        success: function (data) {
+          if (data.is_taken) {
+            alert("A user with this username already exists.");
+          }
+        }
+      });
+
+    });
+    function delete_row(no)
+        {
+        var name = document.getElementById("className" + no).innerHTML;
+        document.getElementById(no).outerHTML="";
+        $.ajax({
+            url: '{% url "delete" %}?class_name=' +name,
+        success: function(data) {
+            alert(name + " class successfully deleted!");
+        },
+        failure: function(data) { 
+            alert('Got an error :( ');
+        }
+        });
+        }
+  </script>
+
+{% endblock %}
